@@ -1,0 +1,8 @@
+.autotools
+.cproject
+.project
+*.o
+*.d
+baks
+up.sh
+dumpait

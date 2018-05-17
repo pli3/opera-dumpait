@@ -1,0 +1,76 @@
+#============================================================================
+# Name        : Makefile
+# Author      : kos(kos@dev3)
+# Version     : 2.2 
+# Copyright   :
+# Description :
+#============================================================================
+IMAGE = bm750
+OEVER = 21
+OETOP = /home/kos/works/projects/vuplus-2.1/openvuplus
+
+BUILD_MODE = RELEASE
+SILENT_MODE = YES
+
+BIN = dumpait
+SRC = \
+	main.cpp \
+	demux.cpp \
+	scanner.cpp \
+	log.cpp
+OBJ = $(SRC:cpp=o)
+
+ifeq ($(OEVER),16)
+SYSROOT=$(OETOP)/$(IMAGE)/build/tmp/staging/mipsel-oe-linux
+CROSS=$(OETOP)/$(IMAGE)/build/tmp/cross/mipsel/bin/mipsel-oe-linux-
+else ifeq ($(OEVER),21)
+SYSROOT=$(OETOP)/build/$(IMAGE)/tmp/sysroots/$(IMAGE)
+CROSS=$(OETOP)/build/$(IMAGE)/tmp/sysroots/i686-linux/usr/bin/mips32el-oe-linux/mipsel-oe-linux-
+else
+$(error Wrong OEVER setted. OEVER=$(OEVER))
+endif
+
+Q=
+CC = $(CROSS)gcc
+CXX = $(CROSS)g++
+STRIP = $(CROSS)strip
+
+CFLAGS  = -fno-exceptions
+LFLAGS  = -L$(SYSROOT)/mipsel-oe-linux/usr/lib -ldvbsi++
+
+ifeq ($(SILENT_MODE),YES)
+	Q = @
+endif
+ifeq ($(BUILD_MODE),DEBUG)
+	CFLAGS += -g -Wall -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-value
+else ifeq ($(BUILD_MODE),RELEASE)
+	CFLAGS += -O2 -fno-strict-aliasing -Wno-unused-variable
+else
+$(error Wrong BUILD_MODE setted. BUILD_MODE=$(BUILD_MODE))
+endif
+
+CFLAGS += -I. -I $(SYSROOT)/../usr/include
+CXXFLAGS  = -fno-rtti $(CFLAGS)
+
+.cpp.o:
+	$(Q)echo "Compile.. "$(subst .o,.cpp,$<)
+	$(Q)$(CXX) -c $(CXXFLAGS) -o $@ $<
+
+.DEFAULT: all
+.SUFFIXES: .cpp .c .h .d
+.PHONY: all clean
+
+all: dumpait
+
+dumpait: $(OBJ)
+	$(Q)echo "Link.. "$(BIN)
+	$(Q)$(CXX) -o $(BIN) $(OBJ) $(LFLAGS)
+	$(Q)echo "Strip.. "$(BIN)
+	$(Q)$(STRIP) $(BIN)
+
+clean: clean_dumpait
+	$(Q)echo "Clean.."
+	$(Q)rm -f core && find . -name "*.d" | xargs rm -f && find . -name "*.o" | xargs rm -f
+clean_dumpait:
+	$(Q)echo "Clean.. "$(BIN)
+	$(Q)rm -f $(BIN) $(OBJ)
